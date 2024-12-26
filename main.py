@@ -11,30 +11,47 @@ from threading import Thread
 from flask import Flask, request
 from kiteconnect import KiteConnect
 from dotenv import load_dotenv
-from core.z_auth import login_to_kite, capture_request_token
+
+from config.database_settings import DATABASE_URI
+from core.z_auth import login_to_kite, generate_kite_session, logout_kite
 import logging
+
+from models import init_db, db
+from models.session import ZSession
 
 load_dotenv()
 PORT = os.getenv('PORT')
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Initialize the Flask app
 app = Flask(__name__)
+app.config["DATABASE_URI"] = DATABASE_URI
+
+
+init_db(app)
 
 # Global variable to store the request token
-# request_token = None
+request_token = None
 
+@app.route("/")
+def home():
+    login_to_kite()
+    return "Trading bot API is running ..."
 
-# @app.route("/")
-# def login_to_kite():
-#     login_to_kite()
+@app.route("/logout")
+def logout():
+    logout_kite()
 
 @app.route('/callback', methods=['GET'])
 def callback():
-    app.logger.debug("Callback endpoint hit")
+    global request_token
+    # app.logger.debug("Callback endpoint hit")
     request_token = request.args.get("request_token")
+    if request_token is not None:
+        generate_kite_session(request_token)
+
     app.logger.debug(f"REQ TOKEN: {request_token}")
-    print(f"Got {request_token}")
+    return f"Got token: {request_token}"
 
 # capture_request_token()
 
@@ -46,7 +63,7 @@ if __name__ == "__main__":
     )
     server_thread.start()
 
-    login_to_kite()
+    # login_to_kite()
 
     # Wait for server thread to complete
     server_thread.join()
