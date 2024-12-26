@@ -1,0 +1,8 @@
+kiteconnect
+websocket-client
+pandas
+numpy
+pyotp
+matplotlib
+SQLAlchemy
+selenium

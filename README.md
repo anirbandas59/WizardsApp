@@ -75,6 +75,8 @@ python main.py
 ├── risk_management.py     # Implements risk management logic
 ├── data_fetcher.py        # Fetches market data via WebSocket
 ├── order_manager.py       # Handles order creation and execution
+├── zerodha_connection.py  # Manages Zerodha login and session handling
+├── utils/                 # Utility functions (e.g., logging, configuration)
 ├── .env                   # Environment variables (ignored by Git)
 ├── requirements.txt       # Dependencies for the project
 ├── .gitignore             # Git ignore file
