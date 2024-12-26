@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 class ZSession(db.Model):
     __tablename__ = "z_session"
-    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     request_token = db.Column(db.String(255), nullable=False)
     access_token = db.Column(db.String(255), nullable=False)
     login_time = db.Column(db.DateTime, nullable=False)
@@ -16,7 +16,8 @@ class ZSession(db.Model):
         self.request_token = request_token
         self.access_token = access_token
         self.login_time = login_time
-        self.expires_in = datetime.now(timezone.utc) + timedelta(hours=3)
+        self.expires_in = (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=6, minute=0, second=0,
+                                                                                   microsecond=0)
 
     def add(self):
         """
@@ -24,36 +25,43 @@ class ZSession(db.Model):
         if the refresh_token is found.
         :return:
         """
-        db.session.add(self)
+        now = self.login_time
+        next_day_6am = (now + timedelta(days=1)).replace(hour=6, minute=0, second=0, microsecond=0)
+        existing_session =  ZSession.query.filter_by(access_token=self.access_token).first()
+
+        if existing_session:
+            # Update the existing row
+            if existing_session.expires_in > now:
+                existing_session.request_token = self.request_token
+                existing_session.login_time = self.login_time
+                existing_session.expires_in = next_day_6am
+        else:
+            # Add a new row
+            db.session.add(self)
+
+        # Commit the transaction
         db.session.commit()
-
-        # Check for existing session
-        # try:
-        #     existing_session = db.session.query.filter(request_token=self.request_token).first()
-        #
-        #     if existing_session:
-        #         existing_session.access_token = self.access_token
-        #         existing_session.login_time = self.login_time
-        #         existing_session.expires_in = self.expires_in
-        #     else:
-        #         db.session.add(self)
-        #
-        #     db.session.commit()
-        # except Exception as e:
-        #     logging.log(e)
-
 
     def __repr__(self):
         return f"<ZSession {self.id} - Expires In: {self.expires_in}"
 
-
-    def get_access_token(self, request_token):
+    @staticmethod
+    def get_access_token(request_token=None):
         now = datetime.now(timezone.utc)
-        session = (
-            db.session.query
-            .filter(self.expires_in > now)
-            .filter(self.request_token == request_token)
-            .order_by(self.login_time.desc())
-            .first()
-        )
+        if request_token:
+            session = (
+                db.session.query(ZSession)
+                .filter(ZSession.expires_in > now)
+                .filter(ZSession.request_token == request_token)
+                .order_by(ZSession.login_time.desc())
+                .first()
+            )
+
+        else:
+            session = (
+                db.session.query(ZSession)
+                .filter(ZSession.expires_in > now)
+                .order_by(ZSession.login_time.desc())
+            )
+
         return session.access_token if session else None
