@@ -42,6 +42,20 @@ class ZSession(db.Model):
         # Commit the transaction
         db.session.commit()
 
+    @staticmethod
+    def invalidate_session(access_token):
+        """
+        Invalidate the access token row
+        :return:
+        """
+        now = datetime.now()  # Ensure the current time is timezone-aware
+        existing_session = db.session.query(ZSession).filter(ZSession.access_token==access_token).first()
+
+        if existing_session:
+            if existing_session.expires_in > now:
+                existing_session.expires_in = now
+                db.session.commit()  # Commit the changes to the database
+
     def __repr__(self):
         return f"<ZSession {self.id} - Expires In: {self.expires_in}"
 

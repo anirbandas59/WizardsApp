@@ -102,11 +102,12 @@ def generate_kite_session(request_token):
         print("Request token not found!")
         # return None
 
-def logout_kite():
+def logout_kite(access_token):
     global kite
     kite = KiteConnect(api_key=api_key)
     if kite:
-        kite.invalidate_access_token()
+        kite.invalidate_access_token(access_token)
+        ZSession.invalidate_session(access_token)
 
 
 # login_to_kite()

@@ -9,7 +9,6 @@ import time
 import os
 from threading import Thread
 from flask import Flask, request
-from kiteconnect import KiteConnect
 from dotenv import load_dotenv
 
 from config.database_settings import DATABASE_URI
@@ -40,7 +39,11 @@ def home():
 
 @app.route("/logout")
 def logout():
-    logout_kite()
+    global request_token
+    access_token = ZSession.get_access_token(request_token)
+    print(access_token)
+    logout_kite(access_token)
+    return f"Logged out successfully..."
 
 @app.route('/callback', methods=['GET'])
 def callback():
@@ -53,13 +56,11 @@ def callback():
     app.logger.debug(f"REQ TOKEN: {request_token}")
     return f"Got token: {request_token}"
 
-# capture_request_token()
-
 
 if __name__ == "__main__":
     # Start the Flask server in separate thread
     server_thread = Thread(
-        target=lambda: app.run(port=PORT, debug=False, use_reloader=False)
+        target=lambda: app.run(port=PORT, debug=False)
     )
     server_thread.start()
 
